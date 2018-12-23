@@ -16,20 +16,21 @@
 
 import axios from 'axios';
 
-export const addRequestedWithHeader = config => {
-  config.headers['X-Requested-With'] = 'XMLHttpRequest';
-  return config;
-};
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+if (global.SBA && global.SBA.csrf && global.SBA.csrf.headerName) {
+  axios.defaults.xsrfHeaderName = global.SBA.csrf.headerName;
+}
 
-const isInstanceActuatorRequest = url => url.match(/^instances[/][^/]+[/]actuator([/].*)?$/);
-
-export const redirectOn401 = error => {
-  if (error.response && error.response.status === 401 && !isInstanceActuatorRequest(error.config.url)) {
+export const redirectOn401 = (predicate = () => true) => error => {
+  if (error.response && error.response.status === 401 && predicate(error)) {
     window.location.assign(`login?redirectTo=${encodeURIComponent(window.location.href)}`);
   }
   return Promise.reject(error);
+
 };
 
-axios.interceptors.request.use(addRequestedWithHeader);
-axios.interceptors.response.use(response => response, redirectOn401);
-export default axios;
+const instance = axios.create();
+instance.interceptors.response.use(response => response, redirectOn401());
+instance.create = axios.create;
+
+export default instance;

@@ -26,13 +26,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import static java.util.Collections.emptyMap;
 import static org.springframework.util.StringUtils.isEmpty;
 
 /**
  * Converts any {@link ServiceInstance}s to {@link Instance}s. To customize the health- or
  * management-url for all instances you can set healthEndpointPath or managementContextPath
  * respectively. If you want to influence the url per service you can add
- * <code>management.context-path</code> or <code>management.port</code> or <code>health.path</code>
+ * <code>management.context-path</code>, <code>management.port</code>, <code>management.address</code> or <code>health.path</code>
  * to the instances metadata.
  *
  * @author Johannes Edmeier
@@ -41,6 +42,7 @@ public class DefaultServiceInstanceConverter implements ServiceInstanceConverter
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultServiceInstanceConverter.class);
     private static final String KEY_MANAGEMENT_PORT = "management.port";
     private static final String KEY_MANAGEMENT_PATH = "management.context-path";
+    private static final String KEY_MANAGEMENT_ADDRESS = "management.address";
     private static final String KEY_HEALTH_PATH = "health.path";
 
     /**
@@ -55,27 +57,18 @@ public class DefaultServiceInstanceConverter implements ServiceInstanceConverter
 
     @Override
     public Registration convert(ServiceInstance instance) {
-        LOGGER.debug("Converting service '{}' running at '{}' with metadata {}", instance.getServiceId(),
-            instance.getUri(), instance.getMetadata());
+        LOGGER.debug(
+            "Converting service '{}' running at '{}' with metadata {}",
+            instance.getServiceId(),
+            instance.getUri(),
+            instance.getMetadata()
+        );
 
-        Registration.Builder builder = Registration.create(instance.getServiceId(), getHealthUrl(instance).toString());
-
-        URI managementUrl = getManagementUrl(instance);
-        if (managementUrl != null) {
-            builder.managementUrl(managementUrl.toString());
-        }
-
-        URI serviceUrl = getServiceUrl(instance);
-        if (serviceUrl != null) {
-            builder.serviceUrl(serviceUrl.toString());
-        }
-
-        Map<String, String> metadata = getMetadata(instance);
-        if (metadata != null) {
-            builder.metadata(metadata);
-        }
-
-        return builder.build();
+        return Registration.create(instance.getServiceId(), getHealthUrl(instance).toString())
+                           .managementUrl(getManagementUrl(instance).toString())
+                           .serviceUrl(getServiceUrl(instance).toString())
+                           .metadata(getMetadata(instance))
+                           .build();
     }
 
     protected URI getHealthUrl(ServiceInstance instance) {
@@ -88,21 +81,28 @@ public class DefaultServiceInstanceConverter implements ServiceInstanceConverter
     }
 
     protected URI getManagementUrl(ServiceInstance instance) {
-        String managamentPath = instance.getMetadata().get(KEY_MANAGEMENT_PATH);
-        if (isEmpty(managamentPath)) {
-            managamentPath = managementContextPath;
+        String managementPath = instance.getMetadata().get(KEY_MANAGEMENT_PATH);
+        if (isEmpty(managementPath)) {
+            managementPath = managementContextPath;
         }
 
         URI serviceUrl = getServiceUrl(instance);
-        String managamentPort = instance.getMetadata().get(KEY_MANAGEMENT_PORT);
-        if (isEmpty(managamentPort)) {
-            managamentPort = String.valueOf(serviceUrl.getPort());
+
+        String managementServerAddress = instance.getMetadata().get(KEY_MANAGEMENT_ADDRESS);
+        if (isEmpty(managementServerAddress)) {
+            managementServerAddress = serviceUrl.getHost();
+        }
+
+        String managementPort = instance.getMetadata().get(KEY_MANAGEMENT_PORT);
+        if (isEmpty(managementPort)) {
+            managementPort = String.valueOf(serviceUrl.getPort());
         }
 
         return UriComponentsBuilder.fromUri(serviceUrl)
-                                   .port(managamentPort)
+                                   .host(managementServerAddress)
+                                   .port(managementPort)
                                    .path("/")
-                                   .path(managamentPath)
+                                   .path(managementPath)
                                    .build()
                                    .toUri();
     }
@@ -112,7 +112,7 @@ public class DefaultServiceInstanceConverter implements ServiceInstanceConverter
     }
 
     protected Map<String, String> getMetadata(ServiceInstance instance) {
-        return instance.getMetadata();
+        return instance.getMetadata() != null ? instance.getMetadata() : emptyMap();
     }
 
 

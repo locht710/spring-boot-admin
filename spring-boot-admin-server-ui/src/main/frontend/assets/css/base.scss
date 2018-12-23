@@ -40,6 +40,14 @@ body {
   word-break: break-all;
 }
 
+pre.is-breakable {
+  white-space: pre-wrap;
+}
+
+.monospaced {
+  font-family: $family-monospace;
+}
+
 .is-muted {
   color: $grey-light;
 }

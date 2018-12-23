@@ -20,29 +20,35 @@
       <div v-if="error" class="message is-danger">
         <div class="message-body">
           <strong>
-            <font-awesome-icon class="has-text-danger" icon="exclamation-triangle"/>
+            <font-awesome-icon class="has-text-danger" icon="exclamation-triangle" />
             Fetching GC metrics failed.
           </strong>
-          <p v-text="error.message"/>
+          <p v-text="error.message" />
         </div>
       </div>
       <div class="level" v-if="current">
         <div class="level-item has-text-centered">
           <div>
-            <p class="heading">Count</p>
-            <p v-text="current.count"/>
+            <p class="heading">
+              Count
+            </p>
+            <p v-text="current.count" />
           </div>
         </div>
         <div class="level-item has-text-centered">
           <div>
-            <p class="heading">Total time spent</p>
-            <p v-text="`${current.total_time.asSeconds()}s`"/>
+            <p class="heading">
+              Total time spent
+            </p>
+            <p v-text="`${current.total_time.asSeconds().toFixed(4)}s`" />
           </div>
         </div>
         <div class="level-item has-text-centered">
           <div>
-            <p class="heading">Max time spent</p>
-            <p v-text="`${current.max.asSeconds()}s`"/>
+            <p class="heading">
+              Max time spent
+            </p>
+            <p v-text="`${current.max.asSeconds().toFixed(4)}s`" />
           </div>
         </div>
       </div>
@@ -55,6 +61,7 @@
   import Instance from '@/services/instance';
   import {concatMap, timer} from '@/utils/rxjs';
   import moment from 'moment';
+  import {toMillis} from '../metrics/metric';
 
   export default {
     props: {
@@ -76,12 +83,13 @@
           (current, measurement) => ({
             ...current,
             [measurement.statistic.toLowerCase()]: measurement.value
-          }), {}
+          }),
+          {}
         );
         return {
           ...measurements,
-          total_time: moment.duration(Math.round(measurements.total_time * 1000)),
-          max: moment.duration(Math.round(measurements.max * 1000)),
+          total_time: moment.duration(toMillis(measurements.total_time, response.baseUnit)),
+          max: moment.duration(toMillis(measurements.max, response.baseUnit)),
         };
       },
       createSubscription() {

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import axios from '@/utils/axios';
+import axios, {redirectOn401} from '@/utils/axios';
 import waitForPolyfill from '@/utils/eventsource-polyfill';
 import {concat, from, ignoreElements, Observable} from '@/utils/rxjs';
 import uri from '@/utils/uri';
-import * as _ from 'lodash';
+import sortBy from 'lodash/sortBy';
 import Instance from './instance';
 
 class Application {
@@ -27,7 +27,11 @@ class Application {
     this.name = name;
     this.axios = axios.create({
       baseURL: uri`applications/${this.name}/`
-    })
+    });
+    this.axios.interceptors.response.use(
+      response => response,
+      redirectOn401()
+    );
   }
 
   findInstance(instanceId) {
@@ -73,7 +77,7 @@ class Application {
     const json = JSON.parse(data);
     if (json instanceof Array) {
       const applications = json.map(Application._toApplication);
-      return _.sortBy(applications, [item => item.name]);
+      return sortBy(applications, [item => item.name]);
     }
     return Application._toApplication(json);
   }
@@ -82,7 +86,7 @@ class Application {
     const instances = application.instances.map(instance => Object.assign(new Instance(instance.id), instance));
     return Object.assign(new Application(application.name), {
       ...application,
-      instances: _.sortBy(instances, [instance => instance.registration.healthUrl])
+      instances: sortBy(instances, [instance => instance.registration.healthUrl])
     });
   }
 }

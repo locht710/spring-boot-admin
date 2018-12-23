@@ -28,8 +28,10 @@ import de.codecentric.boot.admin.server.web.InstancesController;
 import de.codecentric.boot.admin.server.web.client.InstanceWebClient;
 import de.codecentric.boot.admin.server.web.servlet.InstancesProxyController;
 
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.accept.ContentNegotiationManager;
@@ -48,8 +50,8 @@ public class AdminServerWebConfiguration {
     public SimpleModule adminJacksonModule() {
         SimpleModule module = new SimpleModule();
         module.addDeserializer(Registration.class, new RegistrationDeserializer());
-        module.setSerializerModifier(new RegistrationBeanSerializerModifier(
-            new SanitizingMapSerializer(adminServerProperties.getMetadataKeysToSanitize())));
+        module.setSerializerModifier(new RegistrationBeanSerializerModifier(new SanitizingMapSerializer(
+            adminServerProperties.getMetadataKeysToSanitize())));
         return module;
     }
 
@@ -81,8 +83,11 @@ public class AdminServerWebConfiguration {
             InstanceRegistry instanceRegistry,
             InstanceWebClient instanceWebClient) {
             return new de.codecentric.boot.admin.server.web.reactive.InstancesProxyController(
-                adminServerProperties.getContextPath(), adminServerProperties.getInstanceProxy().getIgnoredHeaders(),
-                instanceRegistry, instanceWebClient);
+                adminServerProperties.getContextPath(),
+                adminServerProperties.getInstanceProxy().getIgnoredHeaders(),
+                instanceRegistry,
+                instanceWebClient
+            );
         }
 
         @Bean
@@ -98,6 +103,7 @@ public class AdminServerWebConfiguration {
 
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @AutoConfigureAfter(WebMvcAutoConfiguration.class)
     public static class ServletRestApiConfirguation {
         private final AdminServerProperties adminServerProperties;
 
@@ -109,8 +115,12 @@ public class AdminServerWebConfiguration {
         @ConditionalOnMissingBean
         public InstancesProxyController instancesProxyController(InstanceRegistry instanceRegistry,
                                                                  InstanceWebClient instanceWebClient) {
-            return new InstancesProxyController(adminServerProperties.getContextPath(),
-                adminServerProperties.getInstanceProxy().getIgnoredHeaders(), instanceRegistry, instanceWebClient);
+            return new InstancesProxyController(
+                adminServerProperties.getContextPath(),
+                adminServerProperties.getInstanceProxy().getIgnoredHeaders(),
+                instanceRegistry,
+                instanceWebClient
+            );
         }
 
         @Bean

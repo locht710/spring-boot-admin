@@ -32,6 +32,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MergePolicyConfig;
+import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 
 @Configuration
 @EnableAutoConfiguration
@@ -42,7 +44,11 @@ public class SpringBootAdminApplication {
     public Config hazelcastConfig() {
         MapConfig mapConfig = new MapConfig("spring-boot-admin-event-store").setInMemoryFormat(InMemoryFormat.OBJECT)
                                                                             .setBackupCount(1)
-                                                                            .setEvictionPolicy(EvictionPolicy.NONE);
+                                                                            .setEvictionPolicy(EvictionPolicy.NONE)
+                                                                            .setMergePolicyConfig(new MergePolicyConfig(
+                                                                                PutIfAbsentMapMergePolicy.class.getName(),
+                                                                                100
+                                                                            ));
         return new Config().setProperty("hazelcast.jmx", "true").addMapConfig(mapConfig);
     }
     // end::application-hazelcast[]
@@ -50,6 +56,12 @@ public class SpringBootAdminApplication {
     @Profile("insecure")
     @Configuration
     public static class SecurityPermitAllConfig extends WebSecurityConfigurerAdapter {
+        private final String adminContextPath;
+
+        public SecurityPermitAllConfig(AdminServerProperties adminServerProperties) {
+            this.adminContextPath = adminServerProperties.getContextPath();
+        }
+
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
@@ -58,7 +70,7 @@ public class SpringBootAdminApplication {
                 .and()
                 .csrf()
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringAntMatchers("/instances", "/actuator/**");
+                .ignoringAntMatchers(adminContextPath + "/instances", adminContextPath + "/actuator/**");
         }
     }
 
@@ -88,7 +100,7 @@ public class SpringBootAdminApplication {
             .httpBasic().and()
             .csrf()
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringAntMatchers("/instances", "/actuator/**");
+                .ignoringAntMatchers(adminContextPath + "/instances", adminContextPath + "/actuator/**");
             // @formatter:on
         }
     }

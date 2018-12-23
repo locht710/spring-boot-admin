@@ -1,7 +1,7 @@
 ---
 info:
   scm-url: "@scm.url@"
-  build-url: "http://travis-ci.org/@env.TRAVIS_REPO_SLUG@/builds/@env.TRAVIS_BUILD_ID@"
+  build-url: "https://travis-ci.org/codecentric/spring-boot-admin"
 
 logging:
   file: "target/boot-admin-sample-servlet.log"
@@ -24,6 +24,10 @@ spring:
     admin:
       client:
         url: http://localhost:8080
+        instance:
+          metadata:
+            tags:
+              environment: test
   profiles:
     active:
       - secure
@@ -45,6 +49,8 @@ spring:
 spring:
   profiles: insecure
 
+info.tags.security: insecure
+
 ---
 spring:
   profiles: secure
@@ -62,4 +68,5 @@ spring:
             user.name: "user"         #These two are needed so that the server
             user.password: "password" #can access the protected client endpoints
 
+info.tags.security: secured
 

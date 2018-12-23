@@ -15,30 +15,36 @@
   -->
 
 <template>
-  <div v-html="yaml" class="yaml"/>
+  <div v-html="formatted" class="formatted" />
 </template>
 
 <script>
-  import linkify from '@/utils/linkify';
-  import yaml from 'yamljs';
+  import {Autolink} from '@/utils/autolink';
+  import objToString from '@/utils/objToString';
+
+  const autolink = new Autolink({truncate: {
+      length: 50,
+      location: 'smart'
+    }});
 
   export default {
     props: {
       value: {
+        // eslint-disable-next-line vue/require-prop-type-constructor
         type: null,
         required: true
       },
     },
     computed: {
-      yaml() {
-        return linkify(yaml.stringify(this.value, 2), {maxLength: 50});
+      formatted() {
+         return autolink(objToString(this.value));
       }
     }
   }
 </script>
 
 <style lang="scss">
-  .yaml {
+  .formatted {
     white-space: pre;
   }
 </style>

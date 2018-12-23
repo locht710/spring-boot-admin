@@ -18,30 +18,30 @@
   <nav id="navigation" class="navbar is-fixed-top">
     <div class="container">
       <div class="navbar-brand">
-        <router-link class="navbar-item logo" to="/" v-html="brand"/>
+        <router-link class="navbar-item logo" to="/" v-html="brand" />
 
         <div class="navbar-burger burger" @click.stop="showMenu = !showMenu">
-          <span/>
-          <span/>
-          <span/>
+          <span />
+          <span />
+          <span />
         </div>
       </div>
       <div class="navbar-menu" :class="{'is-active' : showMenu}">
-        <div class="navbar-start"/>
         <div class="navbar-end">
           <router-link class="navbar-item" v-for="view in enabledViews" :to="{name: view.name}" :key="view.name">
-            <component :is="view.label" :applications="applications" :error="error"/>
+            <component :is="view.handle" :applications="applications" :error="error" />
           </router-link>
 
           <div class="navbar-item has-dropdown is-hoverable" v-if="userName">
             <a class="navbar-link">
-              <font-awesome-icon icon="user-circle" size="lg"/>&nbsp;<span v-text="userName"/>
+              <font-awesome-icon icon="user-circle" size="lg" />&nbsp;<span v-text="userName" />
             </a>
             <div class="navbar-dropdown">
               <a class="navbar-item">
                 <form action="logout" method="post">
+                  <input v-if="csrfToken" type="hidden" :name="csrfParameterName" :value="csrfToken">
                   <button class="button is-icon" type="submit" value="logout">
-                    <font-awesome-icon icon="sign-out-alt"/>&nbsp;Log out
+                    <font-awesome-icon icon="sign-out-alt" />&nbsp;Log out
                   </button>
                 </form>
               </a>
@@ -56,11 +56,18 @@
 <script>
   import {compareBy} from '@/utils/collections';
 
+  const readCookie = (name) => {
+    const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+    return (match ? decodeURIComponent(match[3]) : null);
+  };
+
   export default {
     data: () => ({
       showMenu: false,
       brand: '<img src="assets/img/icon-spring-boot-admin.svg"><span>Spring Boot Admin</span>',
-      userName: null
+      userName: null,
+      csrfToken: null,
+      csrfParameterName: null
     }),
     props: {
       views: {
@@ -72,28 +79,29 @@
         default: () => [],
       },
       error: {
-        type: null,
+        type: Error,
         default: null
       }
     },
     computed: {
       enabledViews() {
         return [...this.views].filter(
-          view => view.label && (typeof view.isEnabled === 'undefined' || view.isEnabled())
+          view => view.handle && (typeof view.isEnabled === 'undefined' || view.isEnabled())
         ).sort(compareBy(v => v.order));
       }
     },
     created() {
-      /* global SBA */
-      if (SBA) {
-        if (SBA.uiSettings) {
-          this.brand = SBA.uiSettings.brand || this.brand;
+      if (global.SBA) {
+        if (global.SBA.uiSettings) {
+          this.brand = global.SBA.uiSettings.brand || this.brand;
         }
 
-        if (SBA.user) {
-          this.userName = SBA.user.name;
+        if (global.SBA.user) {
+          this.userName = global.SBA.user.name;
         }
       }
+      this.csrfToken = readCookie('XSRF-TOKEN');
+      this.csrfParameterName = (global.SBA && global.SBA.csrf && global.SBA.csrf.parameterName) || '_csrf';
     },
     mounted() {
       document.documentElement.classList.add('has-navbar-fixed-top');
@@ -108,16 +116,17 @@
   @import "~@/assets/css/utilities";
 
   .logo {
-    font-size: 1.5rem;
+    align-self: center;
+    flex-basis: 12em;
+    flex-basis: content;
+    max-height: 2.25em;
+    padding: 0.5em 1em 0.5em 0.5em;
+    font-size: 1.5em;
     font-weight: 600;
     white-space: nowrap;
-    padding: 0;
 
-    & span {
-      margin: 0.5rem 1rem 0.5rem 0.5rem;
-    }
-    & img {
-      max-height: 2.25rem;
+    img {
+      margin-right: 0.5em;
     }
   }
 </style>

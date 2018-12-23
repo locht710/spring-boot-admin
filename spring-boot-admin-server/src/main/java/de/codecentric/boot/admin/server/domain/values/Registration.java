@@ -22,8 +22,9 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -36,32 +37,36 @@ import org.springframework.util.StringUtils;
 @ToString(exclude = "metadata")
 public class Registration implements Serializable {
     private final String name;
+    @Nullable
     private final String managementUrl;
     private final String healthUrl;
+    @Nullable
     private final String serviceUrl;
     private final String source;
     private final Map<String, String> metadata;
 
     @lombok.Builder(builderClassName = "Builder", toBuilder = true)
     private Registration(String name,
-                         String managementUrl,
+                         @Nullable String managementUrl,
                          String healthUrl,
-                         String serviceUrl,
+                         @Nullable String serviceUrl,
                          String source,
                          @lombok.Singular("metadata") Map<String, String> metadata) {
         Assert.hasText(name, "'name' must not be empty.");
         Assert.hasText(healthUrl, "'healthUrl' must not be empty.");
         Assert.isTrue(checkUrl(healthUrl), "'healthUrl' is not valid: " + healthUrl);
         Assert.isTrue(StringUtils.isEmpty(managementUrl) || checkUrl(managementUrl),
-            "'managementUrl' is not valid: " + managementUrl);
+            "'managementUrl' is not valid: " + managementUrl
+        );
         Assert.isTrue(StringUtils.isEmpty(serviceUrl) || checkUrl(serviceUrl),
-            "'serviceUrl' is not valid: " + serviceUrl);
+            "'serviceUrl' is not valid: " + serviceUrl
+        );
         this.name = name;
         this.managementUrl = managementUrl;
         this.healthUrl = healthUrl;
         this.serviceUrl = serviceUrl;
         this.source = source;
-        this.metadata = new HashMap<>(metadata);
+        this.metadata = new LinkedHashMap<>(metadata);
     }
 
     public static Registration.Builder create(String name, String healthUrl) {

@@ -33,7 +33,7 @@ export default {
       if (!this.value) {
         return null;
       }
-      const duration = moment.duration(this.value * 1000 + this.offset);
+      const duration = moment.duration(this.value + this.offset);
       return `${Math.floor(duration.asDays())}d ${duration.hours()}h ${duration.minutes()}m ${duration.seconds()}s`;
     }
   },
@@ -44,11 +44,11 @@ export default {
     createSubscription() {
       if (this.value) {
         const vm = this;
-        vm.startTs = moment.now();
+        vm.startTs = moment();
         vm.offset = 0;
         return timer(0, 1000).subscribe({
           next: () => {
-            vm.offset = moment.now().valueOf() - vm.startTs.valueOf();
+            vm.offset = moment().valueOf() - vm.startTs.valueOf();
           }
         })
       }

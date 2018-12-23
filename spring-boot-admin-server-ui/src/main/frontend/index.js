@@ -15,7 +15,6 @@
  */
 
 import '@/assets/css/base.scss';
-import '@/assets/img/icon-spring-boot-admin.svg';
 import moment from 'moment';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
@@ -36,8 +35,7 @@ const viewRegistry = new ViewRegistry();
 const installables = [
   Notifications,
   ...views,
-  /* global SBA */
-  ...SBA.extensions
+  ...global.SBA.extensions
 ];
 
 installables.forEach(view => view.install({

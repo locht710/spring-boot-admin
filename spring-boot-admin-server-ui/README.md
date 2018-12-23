@@ -14,10 +14,10 @@ npm run watch
 ```
 2. Run a Spring Boot Admin Server instances with the template-location and resource-location pointing to the build output and disable caching:
 ```
-spring.boot.admin.cache.no-cache: true
-spring.boot.admin.resource-locations: file://@project.basedir@/../../spring-boot-admin-server-ui/target/dist/
-spring.boot.admin.template-location: file://@project.basedir@/../../spring-boot-admin-server-ui/target/dist/
-spring.boot.admin.cache-templates: false
+spring.boot.admin.ui.cache.no-cache: true
+spring.boot.admin.ui.resource-locations: file://@project.basedir@/../../spring-boot-admin-server-ui/target/dist/
+spring.boot.admin.ui.template-location: file://@project.basedir@/../../spring-boot-admin-server-ui/target/dist/
+spring.boot.admin.ui.cache-templates: false
 ```
 Or just start the [spring-boot-admin-sample-servlet](../spring-boot-admin-samples/spring-boot-admin-sample-servlet) project using the `dev` profile.
 

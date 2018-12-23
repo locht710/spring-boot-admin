@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import axios from '@/utils/axios';
+import axios, {redirectOn401} from '@/utils/axios';
 import waitForPolyfill from '@/utils/eventsource-polyfill';
 import logtail from '@/utils/logtail';
 import {concat, from, ignoreElements, Observable} from '@/utils/rxjs';
 import uri from '@/utils/uri';
-import _ from 'lodash';
+import transform from 'lodash/transform';
 
 const actuatorMimeTypes = [
   'application/vnd.spring-boot.actuator.v2+json',
@@ -27,12 +27,18 @@ const actuatorMimeTypes = [
   'application/json'
 ];
 
+const isInstanceActuatorRequest = url => url.match(/^instances[/][^/]+[/]actuator([/].*)?$/);
+
 class Instance {
   constructor(id) {
     this.id = id;
     this.axios = axios.create({
-      baseURL: uri`instances/${this.id}/`
-    })
+      baseURL: uri`instances/${this.id}/`,
+    });
+    this.axios.interceptors.response.use(
+      response => response,
+      redirectOn401(error => !isInstanceActuatorRequest(error.config.url))
+    );
   }
 
   hasEndpoint(endpointId) {
@@ -61,7 +67,7 @@ class Instance {
 
   async fetchMetric(metric, tags) {
     const params = tags ? {
-      tag: _.entries(tags)
+      tag: Object.entries(tags)
         .filter(([, value]) => typeof value !== 'undefined' && value !== null)
         .map(([name, value]) => `${name}:${value}`)
         .join(',')
@@ -73,20 +79,19 @@ class Instance {
   }
 
   async fetchHealth() {
-    try {
-      return await this.axios.get(uri`actuator/health`, {
-        headers: {'Accept': actuatorMimeTypes}
-      });
-    } catch (error) {
-      if (error.response) {
-        return error.response;
-      }
-      throw error;
-    }
+    return await this.axios.get(uri`actuator/health`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
   }
 
   async fetchEnv(name) {
     return this.axios.get(uri`actuator/env/${name || '' }`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
+  async fetchConfigprops() {
+    return this.axios.get(uri`actuator/configprops`, {
       headers: {'Accept': actuatorMimeTypes}
     });
   }
@@ -116,6 +121,31 @@ class Instance {
     });
   }
 
+  async fetchScheduledTasks() {
+    return this.axios.get(uri`actuator/scheduledtasks`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
+  async fetchCaches() {
+    return this.axios.get(uri`actuator/caches`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
+  async clearCaches() {
+    return this.axios.delete(uri`actuator/caches`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
+  async clearCache(name, cacheManager) {
+    return this.axios.delete(uri`actuator/caches/${name}` , {
+      params: {'cacheManager': cacheManager},
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
   async fetchFlyway() {
     return this.axios.get(uri`actuator/flyway`, {
       headers: {'Accept': actuatorMimeTypes}
@@ -141,23 +171,35 @@ class Instance {
     });
   }
 
+  async fetchBeans() {
+    return this.axios.get(uri`actuator/beans`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
   async fetchThreaddump() {
     return this.axios.get(uri`actuator/threaddump`, {
       headers: {'Accept': actuatorMimeTypes}
     });
   }
 
-  async fetchAuditevents(after) {
+  async fetchAuditevents({after, type, principal}) {
     return this.axios.get(uri`actuator/auditevents`, {
       headers: {'Accept': actuatorMimeTypes},
-      params: {after: after.toISOString()}
+      params: {
+        after: after.toISOString(),
+        type: type || undefined,
+        principal: principal || undefined
+      }
     });
   }
 
   async fetchSessionsByUsername(username) {
     return this.axios.get(uri`actuator/sessions`, {
       headers: {'Accept': actuatorMimeTypes},
-      params: {username}
+      params: {
+        username: username || undefined
+      }
     });
   }
 
@@ -174,7 +216,7 @@ class Instance {
   }
 
   streamLogfile(interval) {
-    return logtail(uri`actuator/logfile`, interval);
+    return logtail(opt => this.axios.get(uri`actuator/logfile`, opt), interval);
   }
 
   async listMBeans() {
@@ -220,6 +262,12 @@ class Instance {
     });
   }
 
+  async fetchMappings() {
+    return this.axios.get(uri`actuator/mappings`, {
+      headers: {'Accept': actuatorMimeTypes}
+    });
+  }
+
   static async fetchEvents() {
     return axios.get('instances/events');
   }
@@ -260,7 +308,7 @@ class Instance {
       return data;
     }
     const raw = JSON.parse(data);
-    const loggers = _.transform(raw.loggers, (result, value, key) => {
+    const loggers = transform(raw.loggers, (result, value, key) => {
       return result.push({name: key, ...value});
     }, []);
     return {levels: raw.levels, loggers};
@@ -271,9 +319,9 @@ class Instance {
       return data;
     }
     const raw = JSON.parse(data);
-    return _.entries(raw.value).map(([domain, mBeans]) => ({
+    return Object.entries(raw.value).map(([domain, mBeans]) => ({
       domain,
-      mBeans: _.entries(mBeans).map(([descriptor, mBean]) => ({
+      mBeans: Object.entries(mBeans).map(([descriptor, mBean]) => ({
         descriptor: descriptor,
         ...mBean
       }))

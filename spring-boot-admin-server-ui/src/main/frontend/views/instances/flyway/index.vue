@@ -16,21 +16,22 @@
 
 <template>
   <section class="section" :class="{ 'is-loading' : !hasLoaded }">
-    <div class="container" v-if="hasLoaded">
+    <template v-if="hasLoaded">
       <div v-if="error" class="message is-danger">
         <div class="message-body">
           <strong>
-            <font-awesome-icon class="has-text-danger" icon="exclamation-triangle"/>
+            <font-awesome-icon class="has-text-danger" icon="exclamation-triangle" />
             Fetching Flyway reports failed.
           </strong>
-          <p v-text="error.message"/>
+          <p v-text="error.message" />
         </div>
       </div>
       <template v-for="(context, ctxName) in contexts">
-        <h3 class="title" v-text="ctxName" :key="ctxName"/>
+        <h3 class="title" v-text="ctxName" :key="ctxName" />
         <sba-panel v-for="(report, name) in context.flywayBeans" :key="`${ctxName}-${name}`" :title="name"
-                   :header-sticks-below="['#navigation', '#instance-tabs']"
-                   class="migration">
+                   :header-sticks-below="['#navigation']"
+                   class="migration"
+        >
           <table class="table">
             <thead>
               <tr>
@@ -48,23 +49,26 @@
             </thead>
             <tbody>
               <tr v-for="migration in report.migrations" :key="migration.checksum">
-                <td v-text="migration.type"/>
-                <td v-text="migration.checksum"/>
-                <td v-text="migration.version"/>
-                <td v-text="migration.description"/>
-                <td v-text="migration.script"/>
-                <td><span v-text="migration.state" class="tag"
-                          :class="stateClass(migration.state)"/></td>
-                <td v-text="migration.installedBy"/>
-                <td v-text="migration.installedOn"/>
-                <td v-text="migration.installedRank"/>
-                <td v-text="`${migration.executionTime}ms`"/>
+                <td v-text="migration.type" />
+                <td v-text="migration.checksum" />
+                <td v-text="migration.version" />
+                <td v-text="migration.description" />
+                <td v-text="migration.script" />
+                <td>
+                  <span v-text="migration.state" class="tag"
+                        :class="stateClass(migration.state)"
+                  />
+                </td>
+                <td v-text="migration.installedBy" />
+                <td v-text="migration.installedOn" />
+                <td v-text="migration.installedRank" />
+                <td v-text="`${migration.executionTime}ms`" />
               </tr>
             </tbody>
           </table>
         </sba-panel>
       </template>
-    </div>
+    </template>
   </section>
 </template>
 
@@ -129,6 +133,7 @@
         path: 'flyway',
         component: this,
         label: 'Flyway',
+        group: 'Data',
         order: 900,
         isEnabled: ({instance}) => instance.hasEndpoint('flyway')
       });

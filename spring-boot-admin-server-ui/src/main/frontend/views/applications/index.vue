@@ -20,51 +20,69 @@
       <div v-if="error" class="message is-warning">
         <div class="message-body">
           <strong>
-            <font-awesome-icon class="has-text-warning" icon="exclamation-triangle"/>
+            <font-awesome-icon class="has-text-warning" icon="exclamation-triangle" />
             Server connection failed.
           </strong>
-          <p v-text="error.message"/>
+          <p v-text="error.message" />
         </div>
       </div>
       <div class="level applications-stats">
         <div class="level-item has-text-centered">
           <div>
-            <p class="heading">Applications</p>
-            <p class="title" v-text="applicationsCount">1</p>
+            <p class="heading">
+              Applications
+            </p>
+            <p class="title" v-text="applicationsCount">
+              1
+            </p>
           </div>
         </div>
         <div class="level-item has-text-centered">
           <div>
-            <p class="heading">Instances</p>
-            <p class="title" v-text="instancesCount">1</p>
+            <p class="heading">
+              Instances
+            </p>
+            <p class="title" v-text="instancesCount">
+              1
+            </p>
           </div>
         </div>
         <div class="level-item has-text-centered">
           <div v-if="downCount === 0">
-            <p class="heading">Status</p>
-            <p class="title has-text-success">all up</p>
+            <p class="heading">
+              Status
+            </p>
+            <p class="title has-text-success">
+              all up
+            </p>
           </div>
           <div v-else>
-            <p class="heading">instances down</p>
-            <p class="title has-text-danger" v-text="downCount"/>
+            <p class="heading">
+              instances down
+            </p>
+            <p class="title has-text-danger" v-text="downCount" />
           </div>
         </div>
       </div>
       <div class="application-group" v-for="group in statusGroups" :key="group.status">
-        <p class="heading" v-text="group.status"/>
-        <applications-list :applications="group.applications" :selected="selected"/>
+        <p class="heading" v-text="group.status" />
+        <applications-list :applications="group.applications" :selected="selected" />
       </div>
       <div v-if="statusGroups.length === 0">
-        <p class="is-muted">No applications registered.</p>
+        <p class="is-muted">
+          No applications registered.
+        </p>
       </div>
     </div>
   </section>
 </template>
 
 <script>
-  import * as _ from 'lodash';
+  import groupBy from 'lodash/groupBy';
+  import sortBy from 'lodash/sortBy';
+  import transform from 'lodash/transform';
   import applicationsList from './applications-list';
-  import label from './label';
+  import handle from './handle';
 
   export default {
     props: {
@@ -73,7 +91,7 @@
         default: () => [],
       },
       error: {
-        type: null,
+        type: Error,
         default: null
       },
       selected: {
@@ -81,16 +99,15 @@
         default: null
       }
     },
-    components: {
-      applicationsList,
-    },
+    // eslint-disable-next-line vue/no-unused-components
+    components: {applicationsList},
     computed: {
       statusGroups() {
-        const byStatus = _.groupBy(this.applications, application => application.status);
-        const list = _.transform(byStatus, (result, value, key) => {
-          result.push({status: key, applications: _.sortBy(value, [application => application.name])})
+        const byStatus = groupBy(this.applications, application => application.status);
+        const list = transform(byStatus, (result, value, key) => {
+          result.push({status: key, applications: sortBy(value, [application => application.name])})
         }, []);
-        return _.sortBy(list, [item => item.status]);
+        return sortBy(list, [item => item.status]);
       },
       applicationsCount() {
         return this.applications.length;
@@ -109,7 +126,8 @@
         path: '/applications/:selected?',
         props: true,
         name: 'applications',
-        label,
+        label: 'Applications',
+        handle,
         order: 0,
         component: this
       });
@@ -125,5 +143,4 @@
   .application-group {
     margin: $gap 0;
   }
-
 </style>

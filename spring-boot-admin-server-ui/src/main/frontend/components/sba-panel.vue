@@ -16,26 +16,29 @@
 
 <template>
   <div class="card panel">
-    <header v-if="title || $slots['header']" class="card-header"
-            :class="{'panel__header--sticky': headerSticksBelow}"
-            v-sticks-below="headerSticksBelow">
+    <header
+      v-if="title || $slots['header']"
+      class="card-header"
+      :class="{'panel__header--sticky': headerSticksBelow}"
+      v-sticks-below="headerSticksBelow"
+    >
       <p class="card-header-title">
-        <span v-text="title"/>
-        <slot name="header"/>
+        <span v-text="title" />
+        <slot name="header" />
       </p>
       <div class="panel__close">
-        <sba-icon-button v-if="closeable" :icon="['far', 'times-circle']" @click.stop="close"/>
+        <sba-icon-button v-if="closeable" :icon="['far', 'times-circle']" @click.stop="close" />
       </div>
     </header>
     <div v-if="$slots['default']" class="card-content">
-      <slot/>
+      <slot />
     </div>
   </div>
 </template>
 
 <script>
-  import SbaIconButton from './sba-icon-button';
   import sticksBelow from '@/directives/sticks-below';
+  import SbaIconButton from './sba-icon-button';
 
   export default {
     components: {SbaIconButton},
@@ -78,8 +81,7 @@
 
     &__header--sticky {
       position: sticky;
-      background: $white;
-      top: ($navbar-height-px + $tabs-height-px);
+      background-color: $white;
     }
   }
 </style>

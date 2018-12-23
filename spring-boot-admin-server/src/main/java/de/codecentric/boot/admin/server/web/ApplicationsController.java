@@ -28,9 +28,11 @@ import reactor.util.function.Tuples;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -41,6 +43,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import static de.codecentric.boot.admin.server.domain.values.StatusInfo.STATUS_UNKNOWN;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -71,6 +74,15 @@ public class ApplicationsController {
                        .flatMap(grouped -> toApplication(grouped.key(), grouped));
     }
 
+
+    @GetMapping(path = "/applications/{name}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<Application>> application(@PathVariable("name") String name) {
+        return this.toApplication(name, registry.getInstances(name).filter(Instance::isRegistered))
+                   .filter(a -> !a.getInstances().isEmpty())
+                   .map(ResponseEntity::ok)
+                   .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
     @GetMapping(path = "/applications", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<Application>> applicationsStream() {
         return Flux.from(eventPublisher)
@@ -87,10 +99,9 @@ public class ApplicationsController {
         return registry.getInstances(name)
                        .flatMap(instance -> registry.deregister(instance.getId()))
                        .collectList()
-                       .map(
-                           deregistered -> !deregistered.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity
-                               .notFound()
-                               .build());
+                       .map(deregistered -> !deregistered.isEmpty() ? ResponseEntity.noContent()
+                                                                                    .build() : ResponseEntity.notFound()
+                                                                                                             .build());
     }
 
     protected Tuple2<String, Flux<Instance>> getApplicationForInstance(Instance instance) {
@@ -110,6 +121,7 @@ public class ApplicationsController {
         });
     }
 
+    @Nullable
     protected BuildVersion getBuildVersion(List<Instance> instances) {
         List<BuildVersion> versions = instances.stream()
                                                .map(Instance::getBuildVersion)
@@ -130,7 +142,9 @@ public class ApplicationsController {
         //TODO: Correct is just a second readmodel for groups
         Map<String, Instant> statusWithTime = instances.stream()
                                                        .collect(toMap(instance -> instance.getStatusInfo().getStatus(),
-                                                           Instance::getStatusTimestamp, this::getMax));
+                                                           Instance::getStatusTimestamp,
+                                                           this::getMax
+                                                       ));
         if (statusWithTime.size() == 1) {
             Map.Entry<String, Instant> e = statusWithTime.entrySet().iterator().next();
             return Tuples.of(e.getKey(), e.getValue());
@@ -151,7 +165,7 @@ public class ApplicationsController {
                              .stream()
                              .min(Map.Entry.comparingByKey(StatusInfo.severity()))
                              .map(e -> Tuples.of(e.getKey(), e.getValue()))
-                             .orElse(Tuples.of(StatusInfo.STATUS_UNKNOWN, Instant.EPOCH));
+                             .orElse(Tuples.of(STATUS_UNKNOWN, Instant.EPOCH));
     }
 
     private Instant getMax(Instant t1, Instant t2) {
@@ -166,9 +180,10 @@ public class ApplicationsController {
     @lombok.Data
     public static class Application {
         private final String name;
+        @Nullable
         private BuildVersion buildVersion;
-        private String status;
-        private Instant statusTimestamp;
-        private List<Instance> instances;
+        private String status = STATUS_UNKNOWN;
+        private Instant statusTimestamp = Instant.now();
+        private List<Instance> instances = new ArrayList<>();
     }
 }

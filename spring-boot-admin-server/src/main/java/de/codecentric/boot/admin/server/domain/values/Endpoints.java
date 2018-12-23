@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package de.codecentric.boot.admin.server.domain.values;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,21 +24,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toMap;
 
-@EqualsAndHashCode
-@ToString
+@lombok.EqualsAndHashCode
+@lombok.ToString
 public class Endpoints implements Iterable<Endpoint>, Serializable {
     private final Map<String, Endpoint> endpoints;
-    private static final Endpoints EMPTY = new Endpoints(null);
+    private static final Endpoints EMPTY = new Endpoints(Collections.emptyList());
 
     private Endpoints(Collection<Endpoint> endpoints) {
-        if (endpoints == null || endpoints.isEmpty()) {
+        if (endpoints.isEmpty()) {
             this.endpoints = Collections.emptyMap();
-        } else if (endpoints.size() == 1) {
-            Endpoint endpoint = endpoints.iterator().next();
-            this.endpoints = Collections.singletonMap(endpoint.getId(), endpoint);
         } else {
             this.endpoints = endpoints.stream().collect(toMap(Endpoint::getId, Function.identity()));
         }
@@ -68,7 +63,10 @@ public class Endpoints implements Iterable<Endpoint>, Serializable {
         return new Endpoints(Collections.singletonList(Endpoint.of(id, url)));
     }
 
-    public static Endpoints of(Collection<Endpoint> endpoints) {
+    public static Endpoints of(@Nullable Collection<Endpoint> endpoints) {
+        if (endpoints == null || endpoints.isEmpty()) {
+            return empty();
+        }
         return new Endpoints(endpoints);
     }
 

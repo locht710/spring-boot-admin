@@ -3,6 +3,8 @@
 
 The Spring Boot Admin Server can use Spring Clouds `DiscoveryClient` to discover applications. The advantage is that the clients don't have to include the `spring-boot-admin-starter-client`. You just have to add a `DiscoveryClient` implementation to your admin server - everything else is done by AutoConfiguration.
 
+TIP: Spring Boot Admin will only update the info and available endpoints when a application changes status or when the registration changes. If you want to trigger an update with every new deployment, you can add a key value pair that changes with every restart (e.g. `eureka.instance.metadata-map.startup: ${random.int}`).
+
 [[spring-cloud-discovery-static-config]]
 ==== SimpleDiscoveryClient configuration ====
 
@@ -56,6 +58,10 @@ user.password
 | Credentials being used to access the endpoints.
 |
 
+| management.address
+| The address is substituted in the service URL and will be used for accessing the actuator endpoints.
+|
+
 | management.port
 | The port is substituted in the service URL and will be used for accessing the actuator endpoints.
 |
@@ -86,10 +92,26 @@ user.password
 | `"health"`
 
 | spring.boot.admin.discovery.ignored-services
-| This services will be ignored when using discovery and not registered as application. Supports simple patterns (e.g. "foo*", "*bar", "foo*bar*").
+| This services will be ignored when using discovery and not registered as application. Supports simple patterns (e.g. +++"foo*"+++, +++"*bar"+++, +++"foo*bar*"+++).
 |
 
 | spring.boot.admin.discovery.services
-| This services will be included when using discovery and registered as application. Supports simple patterns (e.g. "foo*", "*bar", "foo*bar*").
+| This services will be included when using discovery and registered as application. Supports simple patterns (e.g. +++"foo*"+++, +++"*bar"+++, +++"foo*bar*"+++).
 | `"*"`
 |===
+
+==== CloudFoundry ====
+If you are deploying your applications to CloudFoundry then `vcap.application.application_id` and `vcap.application.instance_index` *_must_* be added to the metadata for proper registration of applications with Spring Boot Admin Server.
+Here is a sample configuration for Eureka:
+
+[source,yml]
+.application.yml
+----
+eureka:
+  instance:
+    hostname: ${vcap.application.uris[0]}
+    nonSecurePort: 80
+    metadata-map:
+      applicationId: ${vcap.application.application_id}
+      instanceId: ${vcap.application.instance_index}
+----
